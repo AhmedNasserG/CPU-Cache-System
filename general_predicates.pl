@@ -11,3 +11,11 @@ convertBinToDecHelper([H|T],Idx,D):-
    Idx1 is Idx+1,
    convertBinToDecHelper(T,Idx1,D2),
    D is D1 + D2.
+
+convertBinToDecHelper([H|T],Idx,D):-
+   atom_number(H,H1),
+   H1 = 0,
+   Idx1 is Idx+1,
+   convertBinToDecHelper(T,Idx1,D2),
+   D is D2.
+
