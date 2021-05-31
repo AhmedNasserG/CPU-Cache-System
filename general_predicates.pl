@@ -3,7 +3,8 @@ convertBinToDec(A,B):-
   reverse(A1,A2),
   convertBinToDecHelper(A2,0,B).
 
-convertBinToDecHelper([],_,0).  
+convertBinToDecHelper([],_,0). 
+
 convertBinToDecHelper([H|T],Idx,D):-
    atom_number(H,H1),
    H1 = 1,
@@ -18,4 +19,19 @@ convertBinToDecHelper([H|T],Idx,D):-
    Idx1 is Idx+1,
    convertBinToDecHelper(T,Idx1,D2),
    D is D2.
+
+% -----------------------------------
+
+replaceIthItem(X,L,Idx,R):- replaceIthItemHelper(X,L,Idx,0,R).
+
+replaceIthItemHelper(_,[],_,_,[]).
+
+replaceIthItemHelper(X,[_|T],Idx,Idx,[X|T]).
+
+replaceIthItemHelper(X,[H|T],Idx,Ac,[H|R]):-
+	Idx \== Ac,
+	Ac2 is Ac + 1,
+	replaceIthItemHelper(X,T,Idx,Ac2,R).
+
+% -----------------------------------
 
