@@ -35,3 +35,19 @@ replaceIthItemHelper(X,[H|T],Idx,Ac,[H|R]):-
 
 % -----------------------------------
 
+splitEvery(N,L,R):- splitEveryHelper(N,L,0,[],R).
+
+splitEveryHelper(_,[],_,Tmp,[Tmp]).
+
+splitEveryHelper(N,L,N,Tmp,R2):-
+	L \= [],
+	splitEveryHelper(N,L,0,[],R1),
+	append([Tmp],R1,R2).
+
+splitEveryHelper(N,[H|T],Ac,Tmp,R):-
+	N \== Ac,
+	append(Tmp,[H],Tmp2),
+	Ac2 is Ac + 1,
+	splitEveryHelper(N,T,Ac2,Tmp2,R).
+
+% -----------------------------------
