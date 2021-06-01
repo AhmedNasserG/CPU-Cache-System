@@ -51,3 +51,9 @@ splitEveryHelper(N,[H|T],Ac,Tmp,R):-
 	splitEveryHelper(N,T,Ac2,Tmp2,R).
 
 % -----------------------------------
+logBase2(1,0).
+logBase2(N,Ans):-
+    N > 1,
+    N1 is N/2,
+    logBase2(N1, A),
+    Ans is A + 1.
