@@ -1,3 +1,4 @@
+
 convertBinToDec(A,B):-
   string_chars(A,A1),
   reverse(A1,A2),
@@ -84,7 +85,68 @@ getDataFromCache(StringAddress, L, Data, HopsNum, directMap, BitsNum):-
 	atom_number(StrTag, Tag),
 	HopsNum is 0.
 	
-% -----------------------------------
+%-----------------------------------
 convertAddress(Bin,BitsNum,Tag,Idx,directMap):-
     Tag is Bin // (10**BitsNum),
     Idx is Bin - (Tag*(10**BitsNum)).
+
+%-----------------------------------
+%-----------------------------------
+convertAddress(Bin,BitsNum,Tag,_,fullyAssoc):-
+   Bin = Tag.
+    
+%-----------------------------------
+incrementIfNotTrash([],[]).
+incrementIfNotTrash([item(tag(Tag), data(Data), 1,Curr)|T],[item(tag(Tag), data(Data), 1,NewCurr)|S]):-
+   NewCurr is Curr + 1,
+   incrementIfNotTrash(T,S).
+incrementIfNotTrash([item(tag(Tag), data(Data), 0,Curr)|T],[item(tag(Tag), data(Data), 0,Curr)|S]):-
+   incrementIfNotTrash(T,S).
+%-----------------------------------
+getIdxOfTrash([item(tag(_), data(_), 0,_)|T],Idx,Idx).
+getIdxOfTrash([item(tag(Tag), data(Data), 1,_)],Idx,Res):-
+   NewIdx is Idx +1,
+   getIdxOfTrash(T,NewIdx,Res).
+%-----------------------------------
+
+zerosNeeded([item(tag(Tag),_,_,_)|_],StrTag,Res):-
+   string_length(Tag, L1),
+   string_length(StrTag,L2),
+   Res is L1 -L2.
+%-----------------------------------
+getIdxOfOldest([],_,_,Acc,Acc).
+
+getIdxOfOldest([item(tag(_),data(_),_,X)|T],MaxSoFar,Idx,Acc,Res):-
+   X > MaxSoFar,
+   NewIdx is Idx+1,
+   getIdxOfOldest(T,X,NewIdx,Idx,Res).
+
+getIdxOfOldest([item(tag(_),data(_),_,X)|T],MaxSoFar,Idx,Acc,Res):-
+   MaxSoFar >X,
+   NewIdx is Idx+1,
+   getIdxOfOldest(T,X,NewIdx,Acc,Res).
+
+
+
+   
+replaceInCache(Tag,Idx,Mem,OldCache,NewCache,ItemData,fullyAssoc,BitsNum):-
+   atom_string(Tag,StrTag),
+   convertBinToDec(StrTag,DecAdress),
+   nth0(DecAdress,Mem,ItemData),
+   zerosNeeded(OldCache,StrTag,Zeros),
+   fillZeros(StrTag,Zeros,InsertTag),
+   getIdxOfTrash(OldCache,0,InsertIdx),
+   replaceIthItem(item(tag(InsertTag),data(ItemData),1,-1),OldCache,InsertIdx,TempCache),
+   incrementIfNotTrash(TempCache,NewCache).
+
+replaceInCache(Tag,Idx,Mem,OldCache,NewCache,ItemData,fullyAssoc,BitsNum):-
+   atom_string(Tag,StrTag),
+   convertBinToDec(StrTag,DecAdress),
+   nth0(DecAdress,Mem,ItemData),
+   zerosNeeded(OldCache,StrTag,Zeros),
+   fillZeros(StrTag,Zeros,InsertTag),
+   \+ getIdxOfTrash(OldCache,0,InsertIdx),
+   getIdxOfOldest(OldCache,0,0,0,IdxToInsert),
+   replaceIthItem(item(tag(InsertTag),data(ItemData),1,-1),OldCache,IdxToInsert,TempCache),
+   incrementIfNotTrash(TempCache,NewCache).
+
