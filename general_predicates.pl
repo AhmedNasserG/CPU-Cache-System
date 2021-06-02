@@ -57,6 +57,8 @@ logBase2(N,Ans):-
     N1 is N/2,
     logBase2(N1, A),
     Ans is A + 1.
+	
+% -----------------------------------
 
 getNumBits(_,fullyAssoc,_,0).
 getNumBits(NumofSets,setAssoc,_,NumBits):-
@@ -64,6 +66,7 @@ getNumBits(NumofSets,setAssoc,_,NumBits):-
 getNumBits(_,directMap,L,NumBits):-
    length(L, S),
    logBase2(S,NumfBits).
+% -----------------------------------
 
 fillZeros(String,0,String).
 fillZeros(String,N,Res):-
@@ -72,6 +75,16 @@ fillZeros(String,N,Res):-
    fillZeros(String,N1,Res1),
    string_concat("0", Res1, Res).
    
-
-
-   
+% -----------------------------------
+getDataFromCache(StringAddress, L, Data, HopsNum, directMap, BitsNum):-
+	atom_number(StringAddress, Address),
+	convertAddress(Address, BitsNum, Tag, Idx, directMap),
+	convertBinToDec(Idx, DecIdx),
+	nth0(DecIdx, L, item(tag(StrTag), data(Data), 1,_)),
+	atom_number(StrTag, Tag),
+	HopsNum is 0.
+	
+% -----------------------------------
+convertAddress(Bin,BitsNum,Tag,Idx,directMap):-
+    Tag is Bin // (10**BitsNum),
+    Idx is Bin - (Tag*(10**BitsNum)).
