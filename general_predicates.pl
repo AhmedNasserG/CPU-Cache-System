@@ -57,3 +57,21 @@ logBase2(N,Ans):-
     N1 is N/2,
     logBase2(N1, A),
     Ans is A + 1.
+
+getNumBits(_,fullyAssoc,_,0).
+getNumBits(NumofSets,setAssoc,_,NumBits):-
+   logBase2(NumofSets,NumBits).
+getNumBits(_,directMap,L,NumBits):-
+   length(L, S),
+   logBase2(S,NumfBits).
+
+fillZeros(String,0,String).
+fillZeros(String,N,Res):-
+   N > 0,
+   N1 is N-1,
+   fillZeros(String,N1,Res1),
+   string_concat("0", Res1, Res).
+   
+
+
+   
