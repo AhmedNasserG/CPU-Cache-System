@@ -183,8 +183,7 @@ replaceInCache(Tag,Idx,Mem,OldCache,NewCache,ItemData,setAssoc,SetsNum):-
    convertBinToDec(Address,DecAdress),
    nth0(DecAdress,Mem,ItemData),
 
-   atom_string(Idx,StrIdx),
-   convertBinToDec(StrIdx,DecIdx),
+   convertBinToDec(Idx,DecIdx),
    splitEvery(SetsNum,OldCache,OldCacheSplited),
    nth0(DecIdx,OldCacheSplited,Set),
 
@@ -216,3 +215,12 @@ getData(StringAddress,OldCache,Mem,NewCache,Data,HopsNum,Type,BitsNum,miss):-
    atom_number(StringAddress,Address),
    convertAddress(Address,BitsNum,Tag,Idx,Type),
    replaceInCache(Tag,Idx,Mem,OldCache,NewCache,Data,Type,BitsNum).
+
+runProgram([],OldCache,_,OldCache,[],[],Type,_).
+
+runProgram([Address|AdressList],OldCache,Mem,FinalCache,
+[Data|OutputDataList],[Status|StatusList],Type,NumOfSets):-
+   getNumBits(NumOfSets,Type,OldCache,BitsNum),
+   getData(Address,OldCache,Mem,NewCache,Data,HopsNum,Type,BitsNum,Status),
+   runProgram(AdressList,NewCache,Mem,FinalCache,OutputDataList,StatusList,
+   Type,NumOfSets).
