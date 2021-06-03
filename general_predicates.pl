@@ -150,3 +150,31 @@ replaceInCache(Tag,Idx,Mem,OldCache,NewCache,ItemData,fullyAssoc,BitsNum):-
    replaceIthItem(item(tag(InsertTag),data(ItemData),1,-1),OldCache,IdxToInsert,TempCache),
    incrementIfNotTrash(TempCache,NewCache).
 
+% --------- Set Associative ---------
+getDataFromCache(StringAddress,Cache,Data,HopsNum,setAssoc,SetsNum):-
+	atom_number(StringAddress, Address),
+	convertAddress(Address, SetsNum, Tag, Idx, setAssoc),
+	length(Cache, L),
+	((PartitionSize is L // SetsNum, 0 is L mod (SetsNum)); (PartitionSize is (L // SetsNum) + 1, \+ (0 is L mod (SetsNum)))),
+	convertBinToDec(Idx, DecIdx),
+	DecIdx2 is DecIdx * PartitionSize,
+	End is DecIdx2 + PartitionSize,
+	traverse(DecIdx2, End, Cache, Tag, 0, HopsNum, Data).
+	
+	
+convertAddress(Bin,SetsNum,Tag,Idx,setAssoc):-
+   getNumBits(SetsNum,setAssoc,_,NumBits),
+   Tag is Bin // (10**NumBits),
+   Idx is Bin mod (10**NumBits).
+
+traverse(Start,End,Cache,TargetTag,HopsAc,HopsAc,Data):- 
+	Start =< End,
+	nth0(Start,Cache,item(tag(StrTag),data(Data),1,_)),
+	atom_number(StrTag,TargetTag).
+	
+traverse(Start,End,Cache,TargetTag,HopsAc,HopsNum,Data):-
+	Start =< End,
+	Start2 is Start + 1,
+	HopsAc2 is HopsAc + 1,
+	traverse(Start2,End,Cache,TargetTag,HopsAc2,HopsNum,Data).
+% -----------------------------------
