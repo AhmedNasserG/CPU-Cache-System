@@ -202,3 +202,17 @@ replaceInCache(Tag,Idx,Mem,OldCache,NewCache,ItemData,setAssoc,SetsNum):-
    replaceIthItem(NewSet,OldCacheSplited,DecIdx,NewCacheSplited),
    splitEvery(SetsNum,NewCache,NewCacheSplited).
 % -----------------------------------
+
+
+
+
+% ----- Implemented Predicates ------
+getData(StringAddress,OldCache,Mem,NewCache,Data,HopsNum,Type,BitsNum,hit):-
+   getDataFromCache(StringAddress,OldCache,Data,HopsNum,Type,BitsNum),
+   NewCache = OldCache.
+
+getData(StringAddress,OldCache,Mem,NewCache,Data,HopsNum,Type,BitsNum,miss):-
+   \+getDataFromCache(StringAddress,OldCache,Data,HopsNum,Type,BitsNum),
+   atom_number(StringAddress,Address),
+   convertAddress(Address,BitsNum,Tag,Idx,Type),
+   replaceInCache(Tag,Idx,Mem,OldCache,NewCache,Data,Type,BitsNum).
