@@ -63,7 +63,7 @@ getNumBits(NumofSets,setAssoc,_,NumBits):-
    logBase2(NumofSets,NumBits).
 getNumBits(_,directMap,L,NumBits):-
    length(L, S),
-   logBase2(S,NumfBits).
+   logBase2(S,NumBits).
 % -----------------------------------
 
 fillZeros(String,0,String).
