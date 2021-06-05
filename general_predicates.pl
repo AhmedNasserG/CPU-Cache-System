@@ -93,13 +93,15 @@ convertAddress(Bin,BitsNum,Tag,Idx,directMap):-
 
 replaceInCache(Tag,Idx,Mem,OldCache,NewCache,ItemData,directMap,BitsNum):-
    atom_string(Tag,StrTag),
-   convertBinToDec(StrTag,DecAdress),
-   convertBinToDec(Idx, DecIdx),
    atom_string(Idx,StrIdx),
-   string_concat(DecAdress,StrIdx,StringAddress),
+   string_length(StrIdx,L),
+   Zeros1 is BitsNum - L,
+   fillZeros(StrIdx,Zeros1,NewStrIdx),
+   convertBinToDec(Idx, DecIdx),
+   string_concat(StrTag,NewStrIdx,StringAddress),
    convertBinToDec(StringAddress,DecAdd),
    nth0(DecAdd,Mem,ItemData),
-   zerosNeeded(OldCache,StrTag,Zeros),
+   zerosNeeded(BitsNum,StrTag,Zeros),
    fillZeros(StrTag,Zeros,InsertTag),
    replaceIthItem(item(tag(InsertTag),data(ItemData),1,0),OldCache,DecIdx,NewCache).
 
@@ -133,10 +135,10 @@ getIdxOfTrash([item(tag(_), data(_), 1,_)|T],Idx,Res):-
    getIdxOfTrash(T,NewIdx,Res).
 %-----------------------------------
 
-zerosNeeded([item(tag(Tag),_,_,_)|_],StrTag,Res):-
-   string_length(Tag, L1),
+zerosNeeded(BitsNum,StrTag,Res):-
+   X is 6 - BitsNum,
    string_length(StrTag,L2),
-   Res is L1 -L2.
+   Res is X -L2.
 %-----------------------------------
 getIdxOfOldest([],_,_,Acc,Acc).
 
@@ -157,7 +159,7 @@ replaceInCache(Tag,Idx,Mem,OldCache,NewCache,ItemData,fullyAssoc,BitsNum):-
    atom_string(Tag,StrTag),
    convertBinToDec(StrTag,DecAdress),
    nth0(DecAdress,Mem,ItemData),
-   zerosNeeded(OldCache,StrTag,Zeros),
+   zerosNeeded(BitsNum,StrTag,Zeros),
    fillZeros(StrTag,Zeros,InsertTag),
    getIdxOfTrash(OldCache,0,InsertIdx),
    replaceIthItem(item(tag(InsertTag),data(ItemData),1,-1),OldCache,InsertIdx,TempCache),
@@ -167,7 +169,7 @@ replaceInCache(Tag,Idx,Mem,OldCache,NewCache,ItemData,fullyAssoc,BitsNum):-
    atom_string(Tag,StrTag),
    convertBinToDec(StrTag,DecAdress),
    nth0(DecAdress,Mem,ItemData),
-   zerosNeeded(OldCache,StrTag,Zeros),
+   zerosNeeded(BitsNum,StrTag,Zeros),
    fillZeros(StrTag,Zeros,InsertTag),
    \+ getIdxOfTrash(OldCache,0,InsertIdx),
    getIdxOfOldest(OldCache,0,0,0,IdxToInsert),
@@ -193,7 +195,7 @@ convertAddress(Bin,SetsNum,Tag,Idx,setAssoc):-
 
 traverse(Start,End,Cache,TargetTag,HopsAc,HopsAc,Data):- 
 	Start =< End,
-	nth0(Start,Cache,item(tag(StSrTag),data(Data),1,_)),
+	nth0(Start,Cache,item(tag(StrTag),data(Data),1,_)),
 	atom_number(StrTag,TargetTag).
 	
 traverse(Start,End,Cache,TargetTag,HopsAc,HopsNum,Data):-
@@ -205,24 +207,27 @@ traverse(Start,End,Cache,TargetTag,HopsAc,HopsNum,Data):-
 % -----------------------------------
 
 replaceInCache(Tag,Idx,Mem,OldCache,NewCache,ItemData,setAssoc,SetsNum):-
-   string_concat(Tag, Idx, StringAddress),
-   atom_number(StringAddress,Address),
-   convertBinToDec(Address,DecAdress),
-   nth0(DecAdress,Mem,ItemData),
-
-   convertBinToDec(Idx,DecIdx),
-   splitEvery(SetsNum,OldCache,OldCacheSplited),
-   nth0(DecIdx,OldCacheSplited,Set),
-
    atom_string(Tag,StrTag),
-   zerosNeeded(OldCache,StrTag,Zeros),
-   fillZeros(StrTag,Zeros,InsertTag),
+   atom_string(Idx,StrIdx),
+   string_length(StrIdx,L1),
 
-   (
-   getIdxOfTrash(Set,0,InsertIdx);
-   (\+getIdxOfTrash(Set,0,InsertIdx),getIdxOfOldest(Set,0,0,0,InsertIdx))
-   ),
+   getNumBits(SetsNum,setAssoc,_,BitsNum),
+   Zeros1 is BitsNum - L1,
+   fillZeros(StrIdx,Zeros1,NewStrIdx),
+
+   convertBinToDec(Idx, DecIdx),
+   string_concat(StrTag, NewStrIdx, StringAddress),
+   convertBinToDec(StringAddress,DecAdress),
+
+   nth0(DecAdress,Mem,ItemData),
+   length(OldCache,L),
+   ((PartitionSize is L // SetsNum, 0 is L mod (SetsNum)); (PartitionSize is (L // SetsNum) + 1, \+ (0 is L mod (SetsNum)))),
+   splitEvery(PartitionSize,OldCache,OldCacheSplited),
+   nth0(DecIdx,OldCacheSplited,Set),
    
+   zerosNeeded(BitsNum,StrTag,Zeros),
+   fillZeros(StrTag,Zeros,InsertTag),
+   ( getIdxOfTrash(Set,0,InsertIdx);(\+getIdxOfTrash(Set,0,InsertIdx),getIdxOfOldest(Set,0,0,0,InsertIdx))),
    replaceIthItem(item(tag(InsertTag),data(ItemData),1,-1),Set,InsertIdx,TempNewSet),
    incrementIfNotTrash(TempNewSet,NewSet),
    replaceIthItem(NewSet,OldCacheSplited,DecIdx,NewCacheSplited),
@@ -245,9 +250,18 @@ getData(StringAddress,OldCache,Mem,NewCache,Data,HopsNum,Type,BitsNum,miss):-
 
 runProgram([],OldCache,_,OldCache,[],[],Type,_).
 
-runProgram([Address|AdressList],OldCache,Mem,FinalCache,
-[Data|OutputDataList],[Status|StatusList],Type,NumOfSets):-
+runProgram([Address|AdressList],OldCache,Mem,FinalCache,[Data|OutputDataList],[Status|StatusList],Type,NumOfSets):-
+   Type \== setAssoc,
    getNumBits(NumOfSets,Type,OldCache,BitsNum),
    getData(Address,OldCache,Mem,NewCache,Data,HopsNum,Type,BitsNum,Status),
    runProgram(AdressList,NewCache,Mem,FinalCache,OutputDataList,StatusList,
    Type,NumOfSets).
+
+runProgram([Address|AdressList],OldCache,Mem,FinalCache,[Data|OutputDataList],[Status|StatusList],Type,NumOfSets):-
+   Type = setAssoc,
+   getNumBits(NumOfSets,Type,OldCache,BitsNum),
+   getData(Address,OldCache,Mem,NewCache,Data,HopsNum,Type,NumOfSets,Status),
+   runProgram(AdressList,NewCache,Mem,FinalCache,OutputDataList,StatusList,
+   Type,NumOfSets).
+
+
