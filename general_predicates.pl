@@ -91,6 +91,14 @@ convertAddress(Bin,BitsNum,Tag,Idx,directMap):-
     Idx is Bin - (Tag*(10**BitsNum)).
 
 %-----------------------------------
+getDataFromCache(StringAddress, Cache, Data,HopsNum,fullyAssoc,BitsNum):-
+	atom_number(StringAddress, Address),
+	convertAddress(Address, BitsNum, Tag, Idx, fullyAssoc),
+	atom_number(StrTag, Tag),
+    length(Cache,L),
+    traverse(0,L,Cache,Tag,0,HopsNum,Data).
+   
+
 %-----------------------------------
 convertAddress(Bin,BitsNum,Tag,_,fullyAssoc):-
    Bin = Tag.
@@ -169,7 +177,7 @@ convertAddress(Bin,SetsNum,Tag,Idx,setAssoc):-
 
 traverse(Start,End,Cache,TargetTag,HopsAc,HopsAc,Data):- 
 	Start =< End,
-	nth0(Start,Cache,item(tag(StrTag),data(Data),1,_)),
+	nth0(Start,Cache,item(tag(StSrTag),data(Data),1,_)),
 	atom_number(StrTag,TargetTag).
 	
 traverse(Start,End,Cache,TargetTag,HopsAc,HopsNum,Data):-
@@ -178,3 +186,4 @@ traverse(Start,End,Cache,TargetTag,HopsAc,HopsNum,Data):-
 	HopsAc2 is HopsAc + 1,
 	traverse(Start2,End,Cache,TargetTag,HopsAc2,HopsNum,Data).
 % -----------------------------------
+
