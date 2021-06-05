@@ -36,21 +36,18 @@ replaceIthItemHelper(X,[H|T],Idx,Ac,[H|R]):-
 
 % -----------------------------------
 
-splitEvery(N,L,R):- splitEveryHelper(N,L,0,[],R).
+splitEvery(N,L,R):- splitEveryHelper(N,0,L,[],R).
+splitEveryHelper(_,_,[],Tmp,[TmpReversed]):-
+   reverse(Tmp,TmpReversed).
+splitEveryHelper(N,C,[H|T],Tmp,R):-
+   N \= C,
+   C1 is C + 1,
+   splitEveryHelper(N,C1,T,[H|Tmp],R).
 
-splitEveryHelper(_,[],_,Tmp,[Tmp]).
-
-splitEveryHelper(N,L,N,Tmp,R2):-
-	L \= [],
-	splitEveryHelper(N,L,0,[],R1),
-	append([Tmp],R1,R2).
-
-splitEveryHelper(N,[H|T],Ac,Tmp,R):-
-	N \== Ac,
-	append(Tmp,[H],Tmp2),
-	Ac2 is Ac + 1,
-	splitEveryHelper(N,T,Ac2,Tmp2,R).
-
+splitEveryHelper(N,N,L,Tmp,[TmpReversed|R]):-
+   L \== [],
+   splitEveryHelper(N,0,L,[],R),
+   reverse(Tmp,TmpReversed).
 % -----------------------------------
 logBase2(1,0).
 logBase2(N,Ans):-
@@ -66,7 +63,7 @@ getNumBits(NumofSets,setAssoc,_,NumBits):-
    logBase2(NumofSets,NumBits).
 getNumBits(_,directMap,L,NumBits):-
    length(L, S),
-   logBase2(S,NumfBits).
+   logBase2(S,NumBits).
 % -----------------------------------
 
 fillZeros(String,0,String).
@@ -90,6 +87,25 @@ convertAddress(Bin,BitsNum,Tag,Idx,directMap):-
     Tag is Bin // (10**BitsNum),
     Idx is Bin - (Tag*(10**BitsNum)).
 
+
+% replace(O, R, [O|T], [R|T2]) :- replace(O, R, T, T2).
+% replace(O, R, [H|T], [H|T2]) :- H \= O, replace(O, R, T, T2).
+
+replaceInCache(Tag,Idx,Mem,OldCache,NewCache,ItemData,directMap,BitsNum):-
+   atom_string(Tag,StrTag),
+   convertBinToDec(StrTag,DecAdress),
+   convertBinToDec(Idx, DecIdx),
+   atom_string(Idx,StrIdx),
+   string_concat(DecAdress,StrIdx,StringAddress),
+   convertBinToDec(StringAddress,DecAdd),
+   nth0(DecAdd,Mem,ItemData),
+   zerosNeeded(OldCache,StrTag,Zeros),
+   fillZeros(StrTag,Zeros,InsertTag),
+   replaceIthItem(item(tag(InsertTag),data(ItemData),1,0),OldCache,DecIdx,NewCache).
+
+
+
+    
 %-----------------------------------
 getDataFromCache(StringAddress, Cache, Data,HopsNum,fullyAssoc,BitsNum):-
 	atom_number(StringAddress, Address),
@@ -111,8 +127,8 @@ incrementIfNotTrash([item(tag(Tag), data(Data), 1,Curr)|T],[item(tag(Tag), data(
 incrementIfNotTrash([item(tag(Tag), data(Data), 0,Curr)|T],[item(tag(Tag), data(Data), 0,Curr)|S]):-
    incrementIfNotTrash(T,S).
 %-----------------------------------
-getIdxOfTrash([item(tag(_), data(_), 0,_)|T],Idx,Idx).
-getIdxOfTrash([item(tag(Tag), data(Data), 1,_)],Idx,Res):-
+getIdxOfTrash([item(tag(_), data(_), 0,_)|_],Idx,Idx).
+getIdxOfTrash([item(tag(_), data(_), 1,_)|T],Idx,Res):-
    NewIdx is Idx +1,
    getIdxOfTrash(T,NewIdx,Res).
 %-----------------------------------
@@ -125,12 +141,12 @@ zerosNeeded([item(tag(Tag),_,_,_)|_],StrTag,Res):-
 getIdxOfOldest([],_,_,Acc,Acc).
 
 getIdxOfOldest([item(tag(_),data(_),_,X)|T],MaxSoFar,Idx,Acc,Res):-
-   X > MaxSoFar,
+   X >= MaxSoFar,
    NewIdx is Idx+1,
    getIdxOfOldest(T,X,NewIdx,Idx,Res).
 
 getIdxOfOldest([item(tag(_),data(_),_,X)|T],MaxSoFar,Idx,Acc,Res):-
-   MaxSoFar >X,
+   MaxSoFar > X,
    NewIdx is Idx+1,
    getIdxOfOldest(T,X,NewIdx,Acc,Res).
 
@@ -185,5 +201,53 @@ traverse(Start,End,Cache,TargetTag,HopsAc,HopsNum,Data):-
 	Start2 is Start + 1,
 	HopsAc2 is HopsAc + 1,
 	traverse(Start2,End,Cache,TargetTag,HopsAc2,HopsNum,Data).
+
 % -----------------------------------
 
+replaceInCache(Tag,Idx,Mem,OldCache,NewCache,ItemData,setAssoc,SetsNum):-
+   string_concat(Tag, Idx, StringAddress),
+   atom_number(StringAddress,Address),
+   convertBinToDec(Address,DecAdress),
+   nth0(DecAdress,Mem,ItemData),
+
+   convertBinToDec(Idx,DecIdx),
+   splitEvery(SetsNum,OldCache,OldCacheSplited),
+   nth0(DecIdx,OldCacheSplited,Set),
+
+   atom_string(Tag,StrTag),
+   zerosNeeded(OldCache,StrTag,Zeros),
+   fillZeros(StrTag,Zeros,InsertTag),
+
+   (
+   getIdxOfTrash(Set,0,InsertIdx);
+   (\+getIdxOfTrash(Set,0,InsertIdx),getIdxOfOldest(Set,0,0,0,InsertIdx))
+   ),
+   
+   replaceIthItem(item(tag(InsertTag),data(ItemData),1,-1),Set,InsertIdx,TempNewSet),
+   incrementIfNotTrash(TempNewSet,NewSet),
+   replaceIthItem(NewSet,OldCacheSplited,DecIdx,NewCacheSplited),
+   splitEvery(SetsNum,NewCache,NewCacheSplited).
+% -----------------------------------
+
+
+
+
+% ----- Implemented Predicates ------
+getData(StringAddress,OldCache,Mem,NewCache,Data,HopsNum,Type,BitsNum,hit):-
+   getDataFromCache(StringAddress,OldCache,Data,HopsNum,Type,BitsNum),
+   NewCache = OldCache.
+
+getData(StringAddress,OldCache,Mem,NewCache,Data,HopsNum,Type,BitsNum,miss):-
+   \+getDataFromCache(StringAddress,OldCache,Data,HopsNum,Type,BitsNum),
+   atom_number(StringAddress,Address),
+   convertAddress(Address,BitsNum,Tag,Idx,Type),
+   replaceInCache(Tag,Idx,Mem,OldCache,NewCache,Data,Type,BitsNum).
+
+runProgram([],OldCache,_,OldCache,[],[],Type,_).
+
+runProgram([Address|AdressList],OldCache,Mem,FinalCache,
+[Data|OutputDataList],[Status|StatusList],Type,NumOfSets):-
+   getNumBits(NumOfSets,Type,OldCache,BitsNum),
+   getData(Address,OldCache,Mem,NewCache,Data,HopsNum,Type,BitsNum,Status),
+   runProgram(AdressList,NewCache,Mem,FinalCache,OutputDataList,StatusList,
+   Type,NumOfSets).
