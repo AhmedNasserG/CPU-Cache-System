@@ -1,4 +1,4 @@
-
+%...........general predicates....................
 convertBinToDec(A,B):-
   string_chars(A,A1),
   reverse(A1,A2),
@@ -73,7 +73,7 @@ fillZeros(String,N,Res):-
    fillZeros(String,N1,Res1),
    string_concat("0", Res1, Res).
    
-% -----------------------------------
+% -----------------Direct Mapping------------------
 getDataFromCache(StringAddress, L, Data, HopsNum, directMap, BitsNum):-
 	atom_number(StringAddress, Address),
 	convertAddress(Address, BitsNum, Tag, Idx, directMap),
@@ -108,7 +108,7 @@ replaceInCache(Tag,Idx,Mem,OldCache,NewCache,ItemData,directMap,BitsNum):-
 
 
     
-%-----------------------------------
+%---------------Fully assoc--------------------
 getDataFromCache(StringAddress, Cache, Data,HopsNum,fullyAssoc,BitsNum):-
 	atom_number(StringAddress, Address),
 	convertAddress(Address, BitsNum, Tag, Idx, fullyAssoc),
@@ -122,38 +122,6 @@ convertAddress(Bin,BitsNum,Tag,_,fullyAssoc):-
    Bin = Tag.
     
 %-----------------------------------
-incrementIfNotTrash([],[]).
-incrementIfNotTrash([item(tag(Tag), data(Data), 1,Curr)|T],[item(tag(Tag), data(Data), 1,NewCurr)|S]):-
-   NewCurr is Curr + 1,
-   incrementIfNotTrash(T,S).
-incrementIfNotTrash([item(tag(Tag), data(Data), 0,Curr)|T],[item(tag(Tag), data(Data), 0,Curr)|S]):-
-   incrementIfNotTrash(T,S).
-%-----------------------------------
-getIdxOfTrash([item(tag(_), data(_), 0,_)|_],Idx,Idx).
-getIdxOfTrash([item(tag(_), data(_), 1,_)|T],Idx,Res):-
-   NewIdx is Idx +1,
-   getIdxOfTrash(T,NewIdx,Res).
-%-----------------------------------
-
-zerosNeeded(BitsNum,StrTag,Res):-
-   X is 6 - BitsNum,
-   string_length(StrTag,L2),
-   Res is X -L2.
-%-----------------------------------
-getIdxOfOldest([],_,_,Acc,Acc).
-
-getIdxOfOldest([item(tag(_),data(_),_,X)|T],MaxSoFar,Idx,Acc,Res):-
-   X >= MaxSoFar,
-   NewIdx is Idx+1,
-   getIdxOfOldest(T,X,NewIdx,Idx,Res).
-
-getIdxOfOldest([item(tag(_),data(_),_,X)|T],MaxSoFar,Idx,Acc,Res):-
-   MaxSoFar > X,
-   NewIdx is Idx+1,
-   getIdxOfOldest(T,X,NewIdx,Acc,Res).
-
-
-
    
 replaceInCache(Tag,Idx,Mem,OldCache,NewCache,ItemData,fullyAssoc,BitsNum):-
    atom_string(Tag,StrTag),
@@ -182,10 +150,11 @@ getDataFromCache(StringAddress,Cache,Data,HopsNum,setAssoc,SetsNum):-
 	convertAddress(Address, SetsNum, Tag, Idx, setAssoc),
 	length(Cache, L),
 	((PartitionSize is L // SetsNum, 0 is L mod (SetsNum)); (PartitionSize is (L // SetsNum) + 1, \+ (0 is L mod (SetsNum)))),
+   splitEvery(PartitionSize,Cache,CacheSplited),
 	convertBinToDec(Idx, DecIdx),
-	DecIdx2 is DecIdx * PartitionSize,
-	End is DecIdx2 + PartitionSize,
-	traverse(DecIdx2, End, Cache, Tag, 0, HopsNum, Data).
+   nth0(DecIdx,CacheSplited,SetNeeded),
+	length(SetNeeded,L1),
+	traverse(0, L1, SetNeeded, Tag, 0, HopsNum, Data).
 	
 	
 convertAddress(Bin,SetsNum,Tag,Idx,setAssoc):-
@@ -193,16 +162,6 @@ convertAddress(Bin,SetsNum,Tag,Idx,setAssoc):-
    Tag is Bin // (10**NumBits),
    Idx is Bin mod (10**NumBits).
 
-traverse(Start,End,Cache,TargetTag,HopsAc,HopsAc,Data):- 
-	Start =< End,
-	nth0(Start,Cache,item(tag(StrTag),data(Data),1,_)),
-	atom_number(StrTag,TargetTag).
-	
-traverse(Start,End,Cache,TargetTag,HopsAc,HopsNum,Data):-
-	Start =< End,
-	Start2 is Start + 1,
-	HopsAc2 is HopsAc + 1,
-	traverse(Start2,End,Cache,TargetTag,HopsAc2,HopsNum,Data).
 
 % -----------------------------------
 
@@ -234,7 +193,47 @@ replaceInCache(Tag,Idx,Mem,OldCache,NewCache,ItemData,setAssoc,SetsNum):-
    splitEvery(SetsNum,NewCache,NewCacheSplited).
 % -----------------------------------
 
+%-------------helper predicates----------------------------
+incrementIfNotTrash([],[]).
+incrementIfNotTrash([item(tag(Tag), data(Data), 1,Curr)|T],[item(tag(Tag), data(Data), 1,NewCurr)|S]):-
+   NewCurr is Curr + 1,
+   incrementIfNotTrash(T,S).
+incrementIfNotTrash([item(tag(Tag), data(Data), 0,Curr)|T],[item(tag(Tag), data(Data), 0,Curr)|S]):-
+   incrementIfNotTrash(T,S).
+%-----------------------------------
+getIdxOfTrash([item(tag(_), data(_), 0,_)|_],Idx,Idx).
+getIdxOfTrash([item(tag(_), data(_), 1,_)|T],Idx,Res):-
+   NewIdx is Idx +1,
+   getIdxOfTrash(T,NewIdx,Res).
+%-----------------------------------
 
+zerosNeeded(BitsNum,StrTag,Res):-
+   X is 6 - BitsNum,
+   string_length(StrTag,L2),
+   Res is X -L2.
+%-----------------------------------
+getIdxOfOldest([],_,_,Acc,Acc).
+
+getIdxOfOldest([item(tag(_),data(_),_,X)|T],MaxSoFar,Idx,Acc,Res):-
+   X >= MaxSoFar,
+   NewIdx is Idx+1,
+   getIdxOfOldest(T,X,NewIdx,Idx,Res).
+
+getIdxOfOldest([item(tag(_),data(_),_,X)|T],MaxSoFar,Idx,Acc,Res):-
+   MaxSoFar > X,
+   NewIdx is Idx+1,
+   getIdxOfOldest(T,X,NewIdx,Acc,Res).
+%-------------------------------------------------------
+traverse(Start,End,Cache,TargetTag,HopsAc,HopsAc,Data):- 
+	Start =< End,
+	nth0(Start,Cache,item(tag(StrTag),data(Data),1,_)),
+	atom_number(StrTag,TargetTag).
+	
+traverse(Start,End,Cache,TargetTag,HopsAc,HopsNum,Data):-
+	Start =< End,
+	Start2 is Start + 1,
+	HopsAc2 is HopsAc + 1,
+	traverse(Start2,End,Cache,TargetTag,HopsAc2,HopsNum,Data).
 
 
 % ----- Implemented Predicates ------
@@ -249,19 +248,11 @@ getData(StringAddress,OldCache,Mem,NewCache,Data,HopsNum,Type,BitsNum,miss):-
    replaceInCache(Tag,Idx,Mem,OldCache,NewCache,Data,Type,BitsNum).
 
 runProgram([],OldCache,_,OldCache,[],[],Type,_).
-
-runProgram([Address|AdressList],OldCache,Mem,FinalCache,[Data|OutputDataList],[Status|StatusList],Type,NumOfSets):-
-   Type \== setAssoc,
-   getNumBits(NumOfSets,Type,OldCache,BitsNum),
-   getData(Address,OldCache,Mem,NewCache,Data,HopsNum,Type,BitsNum,Status),
-   runProgram(AdressList,NewCache,Mem,FinalCache,OutputDataList,StatusList,
-   Type,NumOfSets).
-
-runProgram([Address|AdressList],OldCache,Mem,FinalCache,[Data|OutputDataList],[Status|StatusList],Type,NumOfSets):-
-   Type = setAssoc,
-   getNumBits(NumOfSets,Type,OldCache,BitsNum),
-   getData(Address,OldCache,Mem,NewCache,Data,HopsNum,Type,NumOfSets,Status),
-   runProgram(AdressList,NewCache,Mem,FinalCache,OutputDataList,StatusList,
-   Type,NumOfSets).
-
+runProgram([Address|AdressList],OldCache,Mem,FinalCache,
+[Data|OutputDataList],[Status|StatusList],Type,NumOfSets):-
+getNumBits(NumOfSets,Type,OldCache,BitsNum),
+(Type = setAssoc, Num = NumOfSets; Type \= setAssoc, Num = BitsNum),
+getData(Address,OldCache,Mem,NewCache,Data,HopsNum,Type,Num,Status),
+runProgram(AdressList,NewCache,Mem,FinalCache,OutputDataList,StatusList,
+Type,NumOfSets).
 
