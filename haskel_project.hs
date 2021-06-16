@@ -4,6 +4,7 @@ convertBinToDecHelper :: (Integral t1, Num p, Num t2) => t1 -> t2 -> p
 convertBinToDecHelper 0 _ = 0
 convertBinToDecHelper x i = 2 ^ mod x 10 + convertBinToDecHelper (div x 10) (i+1)
 
+replaceIthItem :: (Eq t1, Num t1) => t2 -> [t2] -> t1 -> [t2]
 replaceIthItem x list idx = replaceIthItemHelper x list idx 0
 replaceIthItemHelper :: (Eq t1, Num t1) => t2 -> [t2] -> t1 -> t1 -> [t2]
 replaceIthItemHelper _ [] _ _ = []
