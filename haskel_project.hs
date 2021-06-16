@@ -4,9 +4,9 @@ data Data a = D a deriving (Show, Eq)
 
 convertBinToDec :: Integral a => a -> a
 convertBinToDec a = convertBinToDecHelper a 0
-convertBinToDecHelper :: (Integral t1, Num p, Num t2) => t1 -> t2 -> p
+convertBinToDecHelper :: (Integral t1, Integral p, Integral t2) => t1 -> t2 -> p
 convertBinToDecHelper 0 _ = 0
-convertBinToDecHelper x i = 2 ^ mod x 10 + convertBinToDecHelper (div x 10) (i+1)
+convertBinToDecHelper x i = if mod x 10 == 1 then (2^i)+ convertBinToDecHelper (div x 10) (i+1) else convertBinToDecHelper (div x 10) (i+1)
 
 logBase2 :: Floating a => a -> a
 logBase2 = logBase 2
@@ -15,3 +15,10 @@ getNumBits _ "fullAssoc" _ = 0
 getNumBits numOfBits "setAssoc" _ = logBase2 numOfBits
 getNumBits _ "directMap" lst  = logBase2 ( fromIntegral x) 
       where x = length lst
+replaceIthItem :: (Eq t1, Num t1) => t2 -> [t2] -> t1 -> [t2]
+replaceIthItem x list idx = replaceIthItemHelper x list idx 0
+replaceIthItemHelper :: (Eq t1, Num t1) => t2 -> [t2] -> t1 -> t1 -> [t2]
+replaceIthItemHelper _ [] _ _ = []
+replaceIthItemHelper x (h:t) idx currIdx =
+  if idx == currIdx then x:t
+  else h : replaceIthItemHelper x t idx (currIdx+1)
