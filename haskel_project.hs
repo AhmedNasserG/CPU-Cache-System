@@ -27,6 +27,9 @@ replaceIthItemHelper x (h:t) idx currIdx =
   if idx == currIdx then x:t
   else h : replaceIthItemHelper x t idx (currIdx+1)
 
+splitEvery _ [] = []
+splitEvery n list = x1 : (splitEvery n xs) 
+  where (x1,xs) = splitAt n list
 -------------- Set Associative --------------
 -- TODO: expected (Integral b1, Integral b2) => b1 -> b2 -> p -> (b1, b1)
 convertAddress :: (Integral a, Integral b) => a -> b -> [Char] -> (a, a)
