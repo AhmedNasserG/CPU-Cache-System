@@ -36,7 +36,7 @@ getDataFromCache stringAddress cache "setAssoc" bitsNum = loop t 0 (cacheSets!!i
   where
     setsNum = 2^bitsNum
     (t,i) = convertAddress (read stringAddress) setsNum "setAssoc"
-    cacheSets = splitEvery setsNum cache
+    cacheSets = splitEvery (div (length cache) setsNum) cache
 
 loop _ _ [] = NoOutput
 loop t currHopsNum ((It (T t2) (D d) x _):xs) 
