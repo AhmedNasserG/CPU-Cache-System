@@ -41,9 +41,9 @@ replaceInCache tag idx memory oldCache "fullyAssoc" bitsNum = (dat,newCache)
      where 
        address = convertBinToDec tag
        dat = memory !! address
-       itemtoinsert = It (T tag) (D dat) True (-1)
+       itemToInsert = It (T tag) (D dat) True (-1)
        insertIdx = if haveTrash oldCache then getIdxOfTrash oldCache 0 else getIdxOfOldest oldCache
-       tempCache = replaceIthItem itemtoinsert oldCache insertIdx
+       tempCache = replaceIthItem itemToInsert oldCache insertIdx
        newCache = incrementCache tempCache
 
 convertAddress :: (Integral a, Integral b) => a -> b -> [Char] -> (a, a)
@@ -53,6 +53,7 @@ convertAddress binAddress _ "fullyAssoc" =
   tag = binAddress
   idx = 0
 
+haveTrash :: [Item a] -> Bool
 haveTrash [] = False
 haveTrash (It _ _ b _ :xs) = if b ==False then True else haveTrash xs 
 
@@ -65,5 +66,6 @@ getIdxOfOldestHelper (It _ _ _ x :xs) idx max maxIdx = if x >= max then getIdxOf
 
 getIdxOfOldest :: Num a1 => [Item a2] -> a1
 getIdxOfOldest (x:xs) = getIdxOfOldestHelper (x:xs) 0 (-1) 0
+incrementCache :: [Item a] -> [Item a]
 incrementCache [] = []
 incrementCache ((It t d b x) :xs) = if b == True then ((It t d b (x+1)) :incrementCache xs) else ((It t d b x) :incrementCache xs)
