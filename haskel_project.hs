@@ -32,7 +32,7 @@ splitEvery n list = x1 : splitEvery n xs
   where (x1,xs) = splitAt n list
 -------------- Set Associative --------------
 getDataFromCache :: (Integral b, Eq a) => [Char] -> [Item a] -> [Char] -> b -> Output a
-getDataFromCache stringAddress cache "setAssoc" bitsNum = loop t 0 (cacheSets!!i)
+getDataFromCache stringAddress cache "setAssoc" bitsNum = loop t 0 (cacheSets!!(convertBinToDec i))
   where
     setsNum = 2^bitsNum
     (t,i) = convertAddress (read stringAddress) setsNum "setAssoc"
