@@ -35,10 +35,10 @@ splitEvery n list = x1 : splitEvery n xs
 ---------helper Functions------------
 haveTrash :: [Item a] -> Bool
 haveTrash [] = False
-haveTrash (It _ _ b _ :xs) = if b ==False then True else haveTrash xs 
+haveTrash (It _ _ b _ :xs) =  not b ||  haveTrash xs 
 
 getIdxOfTrash :: Num t => [Item a] -> t -> t
-getIdxOfTrash (It _ _ b _ :xs) idx = if b == False then idx else getIdxOfTrash xs (idx+1)
+getIdxOfTrash (It _ _ b _ :xs) idx = if not b then idx else getIdxOfTrash xs (idx+1)
 
 getIdxOfOldestHelper :: Num a1 => [Item a2] -> a1 -> Int -> a1 -> a1
 getIdxOfOldestHelper [] _ _ maxIdx = maxIdx
@@ -48,13 +48,13 @@ getIdxOfOldest :: Num a1 => [Item a2] -> a1
 getIdxOfOldest (x:xs) = getIdxOfOldestHelper (x:xs) 0 (-1) 0
 incrementCache :: [Item a] -> [Item a]
 incrementCache [] = []
-incrementCache ((It t d b x) :xs) = if b == True then ((It t d b (x+1)) :incrementCache xs) else ((It t d b x) :incrementCache xs)  
+incrementCache ((It t d b x) :xs) = if b  then It t d b (x+1) :incrementCache xs else It t d b x :incrementCache xs 
 ------------------------------- full Assoc--------------
 
 
 -------------- GetDataFromCache --------------
 getDataFromCache :: (Integral b, Eq a) => [Char] -> [Item a] -> [Char] -> b -> Output a
-getDataFromCache stringAddress cache "setAssoc" bitsNum = loop t 0 (cacheSets!!(convertBinToDec i))
+getDataFromCache stringAddress cache "setAssoc" bitsNum = loop t 0 (cacheSets!! convertBinToDec i)
   where
     setsNum = 2^bitsNum
     (t,i) = convertAddress (read stringAddress) setsNum "setAssoc"
@@ -66,6 +66,14 @@ loop _ _ [] = NoOutput
 loop t currHopsNum ((It (T t2) (D d) x _):xs) 
   | t2 == t && x = Out (d, currHopsNum)
   | otherwise = loop t (currHopsNum+1) xs
+
+-- getDataFromCache stringAddress cache "directMap" bitsNum
+--     |tag == (fromIntegral binTag) && validBit = Out (retrievedData,0)
+--     |otherwise = NoOutput
+--     where
+--         (binTag,binIndex) = convertAddress (read stringAddress :: Integer) ( fromIntegral bitsNum) "directMap"
+--         index = fromIntegral (convertBinToDec binIndex)
+--         (It (T tag) (D retrievedData) validBit order) = cache!!index
 
 -- TODO: expected (Integral b1, Integral b2) => b1 -> b2 -> p -> (b1, b1)
 convertAddress :: (Integral a, Integral b) => a -> b -> String -> (a, a)
@@ -100,7 +108,7 @@ getData stringAddress cache memory cacheType bitsNum
     getX (Out (d, _)) = d
 
 runProgram [] cache _ _ _ = ([], cache)
-runProgram (addr: xs) cache memory cacheType numOfSets =((d:prevData), finalCache)
+runProgram (addr: xs) cache memory cacheType numOfSets =(d:prevData, finalCache)
   where
   bitsNum = round(logBase2 numOfSets)
   (d, updatedCache) = getData addr cache memory cacheType bitsNum
@@ -108,3 +116,4 @@ runProgram (addr: xs) cache memory cacheType numOfSets =((d:prevData), finalCach
 
 
 
+-------------------Direct-------------------
