@@ -93,7 +93,7 @@ convertAddress binAddress _ "fullyAssoc" = (tag,idx)
   idx = 0    
 
 ------ReplaceInCache--------
-replaceInCache :: Int -> Int -> [a] -> [Item a] -> [Char] -> p2 -> (a, [Item a])
+-- replaceInCache :: Int -> Int -> [a] -> [Item a] -> [Char] -> p2 -> (a, [Item a])
 replaceInCache tag idx memory oldCache "fullyAssoc" bitsNum = (dat,newCache)
      where 
        address = convertBinToDec tag
@@ -102,6 +102,24 @@ replaceInCache tag idx memory oldCache "fullyAssoc" bitsNum = (dat,newCache)
        insertIdx = if haveTrash oldCache then getIdxOfTrash oldCache 0 else getIdxOfOldest oldCache
        tempCache = replaceIthItem itemToInsert oldCache insertIdx
        newCache = incrementCache tempCache
+replaceInCache tag idx memory oldCache "setAssoc" bitsNum = (dat,newCache)
+  where
+    -- strIdx = show idx
+    -- numOfZeros = bitsNum - length (strIdx)
+    -- newStrIdx = fillZeros strIdx numOfZeros
+  
+    address = (show tag) ++ fillZeros (show idx) (bitsNum - (length (show idx)))
+    dat = memory !! (convertBinToDec (read address))
+    newItem = It (T tag) (D dat) True (-1)
+
+    splitedOldCache = splitEvery (2 ^ bitsNum) oldCache
+    selectedSet = splitedOldCache !! (convertBinToDec idx)
+    indexToInsert = if haveTrash selectedSet then getIdxOfTrash selectedSet 0 else getIdxOfOldest selectedSet
+    newSelecteSet = incrementCache (replaceIthItem newItem selectedSet indexToInsert)
+    splitedNewCache = replaceIthItem newSelecteSet splitedOldCache (convertBinToDec idx)
+    newCache = foldr (++) [] splitedNewCache
+    
+
 
 -------implemented functions----------------
 getData stringAddress cache memory cacheType bitsNum
@@ -122,4 +140,41 @@ runProgram (addr: xs) cache memory cacheType numOfSets =(d:prevData, finalCache)
 
 
 
--------------------Direct-------------------
+----------------- Replace in Cache  Set Assoc Test Cases --------------------
+
+-- Examples:
+-- > replaceInCache 0 1 ["100000","100001","100010", "100011","100100",
+-- "100101","100110","100111"] [(It (T 00000) (D "10000") False 1),
+-- (It (T 00000) (D "100000") True 0), (It (T 00010) (D "11100") False 3),
+-- (It (T 00000) (D "11110") False 2)] "setAssoc" 1
+
+-- > replaceInCache 11 1 ["100000","100001","100010", "100011","100100",
+-- "100101","100110","100111"] [(It (T 00000) (D "10000") False 1),
+-- (It (T 00000) (D "100000") True 0), (It (T 00001) (D "100011") True 0),
+-- (It (T 00000) (D "100001") True 1)] "setAssoc" 1
+
+-- > replaceInCache 0 0 ["100000","100001","100010", "100011","100100",
+-- "100101","100110","100111"] [(It (T 00000) (D "10000") False 0),
+-- (It (T 00000) (D "100000") True 0), (It (T 00010) (D "11100") False 3),
+-- (It (T 00000) (D "11110") False 2)] "setAssoc" 1
+
+-- > getData "000001" [It (T 0) (D "10000") False 1,
+-- It (T 0) (D "100000") True 0, It (T 10) (D "11100") False 3,
+-- It (T 0) (D "11110") False 2] ["100000","100001","100010",
+-- "100011","100100","100101","100110","100111"] "setAssoc" 1
+
+-- > getData "000001" [It (T 0) (D "10000") False 1,
+-- It (T 0) (D "11000") True 0, It (T 10) (D "11100") False 3,
+-- It (T 0) (D "11110") True 0] ["100000","100001","100010",
+-- "100011","100100","100101","100110","100111"] "setAssoc" 1
+
+-- > getData "000000" [It (T 0) (D "10000") False 1,
+-- It (T 1) (D "11000") True 0, It (T 10) (D "11100") False 3,
+-- It (T 0) (D "11110") True 0] ["100000","100001","100010",
+-- "100011","100100","100101","100110","100111"] "setAssoc" 1
+
+-- > runProgram ["000011","000100","000011","001100"]
+-- [It (T 0) (D "10000") False 0, It (T 0) (D "11000") False 0,
+-- It (T 1) (D "11100") False 3, It (T 1) (D "e") False 0]
+-- ["a", "b", "c", "d", "e", "f", "ab", "ac", "ad", "ae",
+-- "af", "a", "a", "a", "a", "aa", "a"] "setAssoc" 2
