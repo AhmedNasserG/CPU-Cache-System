@@ -60,40 +60,48 @@ incrementCache ((It t d b x) :xs) = if b  then It t d b (x+1) :incrementCache xs
 
 -------------- GetDataFromCache --------------
 getDataFromCache :: (Integral b, Eq a) => [Char] -> [Item a] -> [Char] -> b -> Output a
-getDataFromCache stringAddress cache "setAssoc" bitsNum = loop t 0 (cacheSets!! convertBinToDec i)
-  where
-    setsNum = 2^bitsNum
-    (t,i) = convertAddress (read stringAddress) setsNum "setAssoc"
-    cacheSets = splitEvery (div (length cache) setsNum) cache
+getDataFromCache stringAddress cache "directMap" bitsNum 
+  | x && tag == t = Out(d,0)
+  | otherwise = NoOutput
+  where 
+    (tag,idx) = convertAddress (read stringAddress) bitsNum "directMap"
+    (It (T t) (D d) x _) = cache!!(convertBinToDec idx)
+
 getDataFromCache stringAddress cache "fullyAssoc" bitsNum = loop t 0 cache 
   where
     t = read stringAddress
+
+getDataFromCache stringAddress cache "setAssoc" bitsNum = loop t 0 (cacheSets!! convertBinToDec i)
+  where
+    setsNum = 2^bitsNum
+    (t,i) = convertAddress (read stringAddress) bitsNum "setAssoc"
+    cacheSets = splitEvery (div (length cache) setsNum) cache
+
 loop _ _ [] = NoOutput
 loop t currHopsNum ((It (T t2) (D d) x _):xs) 
   | t2 == t && x = Out (d, currHopsNum)
   | otherwise = loop t (currHopsNum+1) xs
 
--- getDataFromCache stringAddress cache "directMap" bitsNum
---     |tag == (fromIntegral binTag) && validBit = Out (retrievedData,0)
---     |otherwise = NoOutput
---     where
---         (binTag,binIndex) = convertAddress (read stringAddress :: Integer) ( fromIntegral bitsNum) "directMap"
---         index = fromIntegral (convertBinToDec binIndex)
---         (It (T tag) (D retrievedData) validBit order) = cache!!index
 
--- TODO: expected (Integral b1, Integral b2) => b1 -> b2 -> p -> (b1, b1)
+
 convertAddress :: (Integral a, Integral b) => a -> b -> String -> (a, a)
+convertAddress binAddress bitsNum "directMap" = 
+  (tag,index) where
+    tag = div binAddress (10^bitsNum)
+    index = mod binAddress (10^bitsNum)
+
 convertAddress binAddress bitsNum "setAssoc" =
   (tag,index) where
     tag = div binAddress (10^bitsNum)
     index = mod binAddress (10^bitsNum)
+
 convertAddress binAddress _ "fullyAssoc" = (tag,idx)
   where 
   tag = binAddress
   idx = 0    
 
 ------ReplaceInCache--------
--- replaceInCache :: Int -> Int -> [a] -> [Item a] -> [Char] -> p2 -> (a, [Item a])
+replaceInCache:: Integral b => Int -> Int -> [a] -> [Item a] -> [Char] -> b -> (a, [Item a])
 replaceInCache tag idx memory oldCache "fullyAssoc" bitsNum = (dat,newCache)
      where 
        address = convertBinToDec tag
@@ -103,16 +111,12 @@ replaceInCache tag idx memory oldCache "fullyAssoc" bitsNum = (dat,newCache)
        tempCache = replaceIthItem itemToInsert oldCache insertIdx
        newCache = incrementCache tempCache
 replaceInCache tag idx memory oldCache "setAssoc" bitsNum = (dat,newCache)
-  where
-    -- strIdx = show idx
-    -- numOfZeros = bitsNum - length (strIdx)
-    -- newStrIdx = fillZeros strIdx numOfZeros
-  
-    address = (show tag) ++ fillZeros (show idx) (bitsNum - (length (show idx)))
-    dat = memory !! (convertBinToDec (read address))
+  where  
+    address = (show tag) ++ fillZeros (show idx) ( (fromIntegral bitsNum) - (length (show idx)))
+    dat = memory !! (convertBinToDec (read address :: Int))
     newItem = It (T tag) (D dat) True (-1)
-
-    splitedOldCache = splitEvery (2 ^ bitsNum) oldCache
+    numSets = 2^bitsNum
+    splitedOldCache = splitEvery (div (length oldCache) numSets) oldCache
     selectedSet = splitedOldCache !! (convertBinToDec idx)
     indexToInsert = if haveTrash selectedSet then getIdxOfTrash selectedSet 0 else getIdxOfOldest selectedSet
     newSelecteSet = incrementCache (replaceIthItem newItem selectedSet indexToInsert)
@@ -173,8 +177,4 @@ runProgram (addr: xs) cache memory cacheType numOfSets =(d:prevData, finalCache)
 -- It (T 0) (D "11110") True 0] ["100000","100001","100010",
 -- "100011","100100","100101","100110","100111"] "setAssoc" 1
 
--- > runProgram ["000011","000100","000011","001100"]
--- [It (T 0) (D "10000") False 0, It (T 0) (D "11000") False 0,
--- It (T 1) (D "11100") False 3, It (T 1) (D "e") False 0]
--- ["a", "b", "c", "d", "e", "f", "ab", "ac", "ad", "ae",
--- "af", "a", "a", "a", "a", "aa", "a"] "setAssoc" 2
+--runProgram ["000011","000100","000011","001100"] [It (T 0) (D "10000") False 0, It (T 0) (D "11000") False 0, It (T 1) (D "11100") False 3, It (T 1) (D "e") False 0] ["a", "b", "c", "d", "e", "f", "ab", "ac", "ad", "ae", "af", "a", "a", "a", "a", "aa", "a"] "setAssoc" 2
