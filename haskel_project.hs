@@ -102,6 +102,14 @@ convertAddress binAddress _ "fullyAssoc" = (tag,idx)
 
 ------ReplaceInCache--------
 replaceInCache:: Integral b => Int -> Int -> [a] -> [Item a] -> [Char] -> b -> (a, [Item a])
+replaceInCache tag idx memory oldCache "directMap" bitsNum = (dat,newCache)
+  where
+    address = (show tag) ++ fillZeros (show idx) ( (fromIntegral bitsNum) - (length (show idx)))
+    dat = memory !! (convertBinToDec (read address :: Int))
+    newItem = It (T tag) (D dat) True (0)
+    newCache = replaceIthItem newItem oldCache (convertBinToDec idx)
+
+
 replaceInCache tag idx memory oldCache "fullyAssoc" bitsNum = (dat,newCache)
      where 
        address = convertBinToDec tag
@@ -178,3 +186,4 @@ runProgram (addr: xs) cache memory cacheType numOfSets =(d:prevData, finalCache)
 -- "100011","100100","100101","100110","100111"] "setAssoc" 1
 
 --runProgram ["000011","000100","000011","001100"] [It (T 0) (D "10000") False 0, It (T 0) (D "11000") False 0, It (T 1) (D "11100") False 3, It (T 1) (D "e") False 0] ["a", "b", "c", "d", "e", "f", "ab", "ac", "ad", "ae", "af", "a", "a", "a", "a", "aa", "a"] "setAssoc" 2
+--replaceInCache 0 10 ["100000","100001","100010", "100011","100100","100101","100110","100111"] [(It (T 0000) (D "10000") False 1),(It (T 0000) (D "100001") True 0), (It (T 0001) (D "11100") False 3),(It (T 0001) (D "11110") False 2)] "directMap" 2
