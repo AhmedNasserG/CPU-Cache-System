@@ -13,6 +13,12 @@ convertBinToDecHelper x i = if mod x 10 == 1 then 2^i+ convertBinToDecHelper (di
 logBase2 :: Floating a => a -> a
 logBase2 = logBase 2
 
+
+fillZeros :: (Eq t, Num t) => [Char] -> t -> [Char]
+fillZeros s 0 = s
+fillZeros s n = ['0'] ++ fillZeros s (n-1)
+
+
 -- getNumBits:: (Floating a1, Integral a, RealFrac a1, Foldable t) => a1 -> [Char] -> t a2 -> a
 getNumBits _ "fullAssoc" _ = 0
 getNumBits numOfBits "setAssoc" _ = logBase2 numOfBits
