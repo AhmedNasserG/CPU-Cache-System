@@ -16,7 +16,7 @@ logBase2 = logBase 2
 
 fillZeros :: (Eq t, Num t) => [Char] -> t -> [Char]
 fillZeros s 0 = s
-fillZeros s n = ['0'] ++ fillZeros s (n-1)
+fillZeros s n = '0' : fillZeros s (n-1)
 
 
 -- getNumBits:: (Floating a1, Integral a, RealFrac a1, Foldable t) => a1 -> [Char] -> t a2 -> a
@@ -129,7 +129,7 @@ replaceInCache tag idx memory oldCache "setAssoc" bitsNum = (dat,newCache)
     indexToInsert = if haveTrash selectedSet then getIdxOfTrash selectedSet 0 else getIdxOfOldest selectedSet
     newSelecteSet = incrementCache (replaceIthItem newItem selectedSet indexToInsert)
     splitedNewCache = replaceIthItem newSelecteSet splitedOldCache (convertBinToDec idx)
-    newCache = foldr (++) [] splitedNewCache
+    newCache = concat splitedNewCache
     
 
 
