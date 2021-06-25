@@ -129,7 +129,7 @@ replaceInCache tag idx memory oldCache "setAssoc" bitsNum = (dat,newCache)
     indexToInsert = if haveTrash selectedSet then getIdxOfTrash selectedSet 0 else getIdxOfOldest selectedSet
     newSelecteSet = incrementCache (replaceIthItem newItem selectedSet indexToInsert)
     splitedNewCache = replaceIthItem newSelecteSet splitedOldCache (convertBinToDec idx)
-    newCache = foldr (++) [] splitedNewCache
+    newCache = concat splitedNewCache
     
 
 
