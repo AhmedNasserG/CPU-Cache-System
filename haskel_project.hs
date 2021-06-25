@@ -64,17 +64,17 @@ getDataFromCache stringAddress cache "directMap" bitsNum
   | x && tag == t = Out(d,0)
   | otherwise = NoOutput
   where 
-    (tag,idx) = convertAddress (read stringAddress) bitsNum "directMap"
+    (tag,idx) = convertAddress (read stringAddress :: Int) bitsNum "directMap"
     (It (T t) (D d) x _) = cache!!(convertBinToDec idx)
 
 getDataFromCache stringAddress cache "fullyAssoc" bitsNum = loop t 0 cache 
   where
-    t = read stringAddress
+    t = read stringAddress :: Int
 
-getDataFromCache stringAddress cache "setAssoc" bitsNum = loop t 0 (cacheSets!! convertBinToDec i)
+getDataFromCache stringAddress cache "setAssoc" bitsNum = loop t 0 (cacheSets!!convertBinToDec i)
   where
     setsNum = 2^bitsNum
-    (t,i) = convertAddress (read stringAddress) bitsNum "setAssoc"
+    (t,i) = convertAddress (read stringAddress :: Int) bitsNum "setAssoc"
     cacheSets = splitEvery (div (length cache) setsNum) cache
 
 loop _ _ [] = NoOutput

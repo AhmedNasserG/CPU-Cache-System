@@ -39,7 +39,7 @@ getDataFromCache stringAddress cache "directMap" bitsNum
   | x && tag == t = Out(d,0)
   | otherwise = NoOutput
   where 
-    (tag,idx) = convertAddress (read stringAddress) bitsNum "directMap"
+    (tag,idx) = convertAddress (read stringAddress :: Int) bitsNum "directMap"
     (It (T t) (D d) x _) = cache!!(convertBinToDec idx)
 
 convertAddress :: (Integral a, Integral b) => a -> b -> [Char] -> (a, a)
